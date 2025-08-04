@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "vayujal-db-for-device-customer",
+          "appId": "1:148518126293:android:806a07bdeee5f13346d85c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "vayujal-db-for-device-customer",
+          "configurations": {
+            "android": "1:148518126293:android:806a07bdeee5f13346d85c",
+            "ios": "1:148518126293:ios:36520b44002c31ec46d85c",
+            "web": "1:148518126293:web:c6e59c19073b679646d85c"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}
