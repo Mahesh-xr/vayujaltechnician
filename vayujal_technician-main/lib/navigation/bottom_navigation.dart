@@ -67,7 +67,7 @@ class BottomNavigation extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('notifications')
-          .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+          .where('recipientId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
           .where('isRead', isEqualTo: false)
           .snapshots(),
       builder: (context, snapshot) {

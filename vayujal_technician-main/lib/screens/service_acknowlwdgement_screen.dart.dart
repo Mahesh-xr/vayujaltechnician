@@ -505,7 +505,7 @@ Service Date: $serviceDate
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Secure Download Service Report',
+                  'Download Service Report',
                   style: TextStyle(
                     fontSize: 14, 
                     fontWeight: FontWeight.bold,
@@ -544,27 +544,7 @@ Service Date: $serviceDate
                   ),
                 
                 // Security Notice
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info, color: Colors.blue[600], size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Customer verification required. An OTP will be sent to ${_serviceRequestData!['customerDetails']?['phone'] ?? 'customer\'s phone'} for secure download.',
-                          style: TextStyle(color: Colors.blue[700], fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                
                 
                 const Text(
                   'Generate and download the service acknowledgment PDF report',
@@ -574,8 +554,8 @@ Service Date: $serviceDate
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _isGeneratingPdf ? null : _initiateOtpVerification,
-                    // onPressed: _generateAndDownloadPdf,
+                    // onPressed: _isGeneratingPdf ? null : _initiateOtpVerification,
+                    onPressed: _generateAndDownloadPdf,
                     icon: _isGeneratingPdf
                         ? const SizedBox(
                             height: 20,
