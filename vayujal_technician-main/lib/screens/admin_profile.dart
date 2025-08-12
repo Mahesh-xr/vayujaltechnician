@@ -796,9 +796,11 @@ class _AdminProfileSetupPageState extends State<AdminProfileSetupPage> {
   }) {
     if (_isEditingMode) {
       // Show TextField in edit mode
+      bool isEmailField = label.toLowerCase() == 'email';
       return TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        enabled: !isEmailField ? true : false,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: Colors.grey.shade500),
