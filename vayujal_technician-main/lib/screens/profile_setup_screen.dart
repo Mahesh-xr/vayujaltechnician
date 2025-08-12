@@ -8,6 +8,7 @@ import 'package:vayujal_technician/navigation/NormalAppBar.dart';
 import 'package:vayujal_technician/screens/dashboard_screen.dart';
 import 'package:vayujal_technician/utils/validation_utils.dart';
 import 'package:vayujal_technician/services/notification_service.dart';
+import 'package:vayujal_technician/services/dynamic_dropdown_service.dart';
 import 'dart:io';
 
 import 'package:vayujal_technician/utils/constants.dart';
@@ -37,16 +38,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool _isLoading = false;
   bool _isUploadingImage = false;
   String _profileImageUrl = '';
-
-  final List<String> _designations = [
-    'Technician',
-    'Senior Technician',
-    'Lead Technician',
-    'Supervisor',
-    'Manager',
-    'Engineer',
-    'Senior Engineer',
-  ];
+  List<String> _designations = [];
+  bool _isLoadingDesignations = true;
 
   final ImagePicker _picker = ImagePicker();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -62,7 +55,44 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null) {
       _emailController.text = user.email!;
+    }
+    _loadDynamicDesignations();
+  }
+
+  Future<void> _loadDynamicDesignations() async {
+    try {
+      setState(() {
+        _isLoadingDesignations = true;
+      });
       
+      // Fetch designations using the numbered fields structure
+      final designations = await DynamicDropdownService.fetchNumberedFieldsDropdown(
+        collection: 'dropdown_List',
+        document: 'Designation',
+      );
+      
+      print('> Fetched designations: ${designations.length} items');
+      if (designations.isNotEmpty) {
+        print('> Designations: ${designations.toList()}');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _designations = designations;
+          _isLoadingDesignations = false;
+          // Set default designation if available
+          if (designations.isNotEmpty && !designations.contains(_selectedDesignation)) {
+            _selectedDesignation = designations.first;
+          }
+        });
+      }
+    } catch (e) {
+      print('> Error loading designations: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingDesignations = false;
+        });
+      }
     }
   }
 
@@ -570,29 +600,48 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               const SizedBox(height: 16),
               
               // Designation Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedDesignation,
-                decoration: AppConstants.getInputDecoration('Designation'),
-                items: _designations.map((String designation) {
-                  return DropdownMenuItem<String>(
-                    value: designation,
-                    child: Text(designation),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedDesignation = newValue;
-                    });
-                  }
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a designation';
-                  }
-                  return null;
-                },
-              ),
+              _isLoadingDesignations
+                  ? Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 16),
+                          Text('Loading designations...'),
+                        ],
+                      ),
+                    )
+                  : DropdownButtonFormField<String>(
+                      value: _selectedDesignation,
+                      decoration: AppConstants.getInputDecoration('Designation'),
+                      items: _designations.map((String designation) {
+                        return DropdownMenuItem<String>(
+                          value: designation,
+                          child: Text(designation),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedDesignation = newValue;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a designation';
+                        }
+                        return null;
+                      },
+                    ),
               
               const SizedBox(height: 32),
               

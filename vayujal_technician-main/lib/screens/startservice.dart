@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:video_player/video_player.dart';
 
 import 'package:vayujal_technician/screens/resolution.dart';
+import 'package:vayujal_technician/services/dynamic_dropdown_service.dart';
 
 class StartServiceScreen extends StatefulWidget {
   final String srNumber;
@@ -55,15 +56,13 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
   // Maximum images per view
   static const int maxImagesPerView = 5;
 
-  // Dropdown options
-  static final List<String> _complaintTypes = [
-    'Electrical','Refrigeration', 'Filtration', 'Mechanical', 'General Service', 'Others'
-  ];
-
-  static final List<String> _issueTypes = [
-    'Machine start', 'Machine trip', 'LP trip', 'HP trip', 'PP error', 'Tank full error', 'Power button', 'Pump button', 'Water leakage', 'Water taste', 'Mechanical structure', 
-    'Automatic Water dispense', 'Noise', 'None', 'Others' 
-  ];
+  // Dynamic dropdown options
+  List<String> _complaintTypes = [];
+  List<String> _issueTypes = [];
+ 
+  bool _isLoadingComplaints = true;
+  bool _isLoadingIssues = true;
+ 
 
   @override
   void dispose() {
@@ -72,6 +71,57 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
     _videoController?.dispose();
     
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDynamicDropdowns();
+  }
+
+  Future<void> _loadDynamicDropdowns() async {
+    try {
+      setState(() {
+        _isLoadingComplaints = true;
+        _isLoadingIssues = true;
+        
+      });
+
+      // Load complaint types from dropdown_List/complaint_dropdown
+      final complaints = await DynamicDropdownService.fetchNumberedFieldsDropdown(
+        collection: 'dropdown_List',
+        document: 'complaint_dropdown',
+      );
+
+      // Load issue types from dropdown_List/Type_of_raised_issue
+      final issues = await DynamicDropdownService.fetchNumberedFieldsDropdown(
+        collection: 'dropdown_List',
+        document: 'Type_of_raised_issue',
+      );
+
+      // Load identified issue types from dropdown_List/Types_of_identified_issue
+      
+
+
+      if (mounted) {
+        setState(() {
+          _complaintTypes = complaints;
+          _issueTypes = issues;
+          _isLoadingComplaints = false;
+          _isLoadingIssues = false;
+         
+        });
+      }
+    } catch (e) {
+      print('> Error loading dynamic dropdowns: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingComplaints = false;
+          _isLoadingIssues = false;
+         
+        });
+      }
+    }
   }
 
   @override
@@ -135,7 +185,7 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
                     Text('Complaint Related to', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: _showComplaintSelectionDialog,
+                      onTap: _isLoadingComplaints ? null : _showComplaintSelectionDialog,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -146,18 +196,32 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _selectedComplaintTypes.isEmpty
-                                  ? 'Tap to select complaints'
-                                  : 'Selected (${_selectedComplaintTypes.length}):',
-                              style: TextStyle(
-                                color: _selectedComplaintTypes.isEmpty ? Colors.grey : Colors.blue[800],
-                                fontWeight: _selectedComplaintTypes.isEmpty ? FontWeight.normal : FontWeight.bold,
+                            if (_isLoadingComplaints)
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text('Loading complaints...', style: TextStyle(color: Colors.grey)),
+                                ],
+                              )
+                            else ...[
+                              Text(
+                                _selectedComplaintTypes.isEmpty
+                                    ? 'Tap to select complaints'
+                                    : 'Selected (${_selectedComplaintTypes.length}):',
+                                style: TextStyle(
+                                  color: _selectedComplaintTypes.isEmpty ? Colors.grey : Colors.blue[800],
+                                  fontWeight: _selectedComplaintTypes.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            if (_selectedComplaintTypes.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(_selectedComplaintTypes.join(', '), style: const TextStyle(color: Colors.black87)),
+                              if (_selectedComplaintTypes.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(_selectedComplaintTypes.join(', '), style: const TextStyle(color: Colors.black87)),
+                              ],
                             ],
                           ],
                         ),
@@ -174,7 +238,7 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
                     Text('Type of Raised Issue', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     InkWell(
-                      onTap: _showIssueSelectionDialog,
+                      onTap: _isLoadingIssues ? null : _showIssueSelectionDialog,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -185,18 +249,32 @@ class _StartServiceScreenState extends State<StartServiceScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _selectedIssueTypes.isEmpty
-                                  ? 'Tap to select issues'
-                                  : 'Selected (${_selectedIssueTypes.length}):',
-                              style: TextStyle(
-                                color: _selectedIssueTypes.isEmpty ? Colors.grey : Colors.blue[800],
-                                fontWeight: _selectedIssueTypes.isEmpty ? FontWeight.normal : FontWeight.bold,
+                            if (_isLoadingIssues)
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text('Loading issues...', style: TextStyle(color: Colors.grey)),
+                                ],
+                              )
+                            else ...[
+                              Text(
+                                _selectedIssueTypes.isEmpty
+                                    ? 'Tap to select issues'
+                                    : 'Selected (${_selectedIssueTypes.length}):',
+                                style: TextStyle(
+                                  color: _selectedIssueTypes.isEmpty ? Colors.grey : Colors.blue[800],
+                                  fontWeight: _selectedIssueTypes.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            if (_selectedIssueTypes.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(_selectedIssueTypes.join(', '), style: const TextStyle(color: Colors.black87)),
+                              if (_selectedIssueTypes.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(_selectedIssueTypes.join(', '), style: const TextStyle(color: Colors.black87)),
+                              ],
                             ],
                           ],
                         ),
@@ -1564,30 +1642,41 @@ String _formatDuration(Duration duration) {
 
 void _showComplaintSelectionDialog() {
   List<String> tempSelected = List.from(_selectedComplaintTypes);
+  
+  // Use dynamic data or fallback to hardcoded values
+  final complaintOptions = _complaintTypes.isNotEmpty 
+      ? _complaintTypes 
+      : ['Electrical', 'Refrigeration', 'Filtration', 'Mechanical', 'General Service', 'Others'];
+  
   showDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
         title: const Text('Select Complaint Related to (Multiple Selection)'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView(
-            children: _complaintTypes.map((item) => CheckboxListTile(
-              title: Text(item),
-              value: tempSelected.contains(item),
-              onChanged: (value) {
-                setDialogState(() {
-                  if (value == true) {
-                    tempSelected.add(item);
-                  } else {
-                    tempSelected.remove(item);
-                  }
-                });
-              },
-            )).toList(),
-          ),
-        ),
+        content: _isLoadingComplaints
+            ? SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView(
+                  children: complaintOptions.map((item) => CheckboxListTile(
+                    title: Text(item),
+                    value: tempSelected.contains(item),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          tempSelected.add(item);
+                        } else {
+                          tempSelected.remove(item);
+                        }
+                      });
+                    },
+                  )).toList(),
+                ),
+              ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1609,30 +1698,41 @@ void _showComplaintSelectionDialog() {
 }
 void _showIssueSelectionDialog() {
   List<String> tempSelected = List.from(_selectedIssueTypes);
+  
+  // Use dynamic data or fallback to hardcoded values
+  final issueOptions = _issueTypes.isNotEmpty 
+      ? _issueTypes 
+      : ['Machine start', 'Machine trip', 'LP trip', 'HP trip', 'PP error', 'Tank full error', 'Power button', 'Pump button', 'Water leakage', 'Water taste', 'Mechanical structure', 'Automatic Water dispense', 'Noise', 'None', 'Others'];
+  
   showDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
         title: const Text('Select Type of Raised Issue (Multiple Selection)'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView(
-            children: _issueTypes.map((item) => CheckboxListTile(
-              title: Text(item),
-              value: tempSelected.contains(item),
-              onChanged: (value) {
-                setDialogState(() {
-                  if (value == true) {
-                    tempSelected.add(item);
-                  } else {
-                    tempSelected.remove(item);
-                  }
-                });
-              },
-            )).toList(),
-          ),
-        ),
+        content: _isLoadingIssues
+            ? SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView(
+                  children: issueOptions.map((item) => CheckboxListTile(
+                    title: Text(item),
+                    value: tempSelected.contains(item),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          tempSelected.add(item);
+                        } else {
+                          tempSelected.remove(item);
+                        }
+                      });
+                    },
+                  )).toList(),
+                ),
+              ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

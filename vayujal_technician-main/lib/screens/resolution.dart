@@ -6,6 +6,7 @@ import 'package:vayujal_technician/navigation/NormalAppBar.dart';
 import 'package:vayujal_technician/screens/dbforresolution.dart';
 import 'package:vayujal_technician/screens/service_acknowlwdgement_screen.dart.dart';
 import 'package:video_player/video_player.dart';
+import 'package:vayujal_technician/services/dynamic_dropdown_service.dart';
 
 class ResolutionPage extends StatefulWidget {
   final String srNumber;
@@ -50,38 +51,17 @@ class _ResolutionPageState extends State<ResolutionPage> {
   String _selectedStatus = 'completed';
   bool _isLoading = false;
 
-  // Issue options
-  final List<String> _issueOptions = [
-    'Adapter', 'OLR', 'Contactor', 'LP/HP switch', 'Sensor', 'LED', 'Switch', 'Controllers', 
-    'Capacitor', 'Fan', 'Air filter', 'Gas leakage', 'Compressor', 'Icing', 'Pump', 'Filters', 
-    'Plumbing', 'Rusting', 'Cracks', 'Buckling', 'Bending', 'Environmental', 'None', 'Others'
-  ];
-
-  // Updated Parts options with hierarchical structure as requested
-  final Map<String, List<String>> _partsOptions = {
-    'ROCKER SWITCH': ['RED DPST', 'BLUE DPST', 'PUSH LOCK BUTTON'],
-    'ADAPTER': ['1.5A ADAPTER', '2.5A ADAPTER', 'UVI CHOKE 230VAC'],
-    'RELAY AND BASE': [],
-    'WATER PUMP': [],
-    'CAPACITOR': [],
-    'OLR': [],
-    'CONTACTOR': [],
-    'TIMER': [],
-    'FILTERS': ['SEDIMENT', 'PRE CARBON', 'POST CARBON', 'MINERALS', 'UF MEMBRANE', 'UV', 'OZONE-GENERATOR'],
-    'FAN': [],
-    'REFRIGERANT': [],
-    'WHEELS': [],
-    'MCB': [],
-    'PLUG-IN 3 TOP': [],
-    'PRESSURE SWITCH': [],
-    'CONTROLLERS': ['SZ 2911', 'SZ 7510T', 'SZ 7524T'],
-    'Others': [],
-  };
+  // Dynamic dropdowns
+  List<String> _dynamicIssueOptions = [];
+  bool _isLoadingIssues = true;
+  Map<String, List<String>> _dynamicPartsOptions = {};
+  bool _isLoadingParts = true;
 
   @override
   void initState() {
     super.initState();
     _loadServiceRequestData();
+    _fetchDynamicDropdowns();
   }
 
   @override
@@ -109,6 +89,51 @@ class _ResolutionPageState extends State<ResolutionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading data: $e')),
         );
+      }
+    }
+  }
+
+  Future<void> _fetchDynamicDropdowns() async {
+    setState(() {
+      _isLoadingIssues = true;
+      _isLoadingParts = true;
+    });
+    try {
+      // Fetch Types of Identified Issues using the numbered fields structure
+      print('> Attempting to fetch from: dropdown_List/Type_of_identified_issue');
+      final issues = await DynamicDropdownService.fetchNumberedFieldsDropdown(
+        collection: 'dropdown_List',
+        document: 'Types_of_identified_issue',
+      );
+      
+      print('> Fetched issues: ${issues.length} items');
+      if (issues.isNotEmpty) {
+        print('> First few issues: ${issues.take(5).toList()}');
+      } else {
+        print('> No issues fetched - using fallback values');
+      }
+      
+      // Fetch Parts Replacement using the mixed structure
+      final parts = await DynamicDropdownService.fetchMixedStructureDropdown(
+        collection: 'dropdown_List',
+        document: 'parts_replacement',
+      );
+      
+      if (mounted) {
+        setState(() {
+          _dynamicIssueOptions = issues;
+          _isLoadingIssues = false;
+          _dynamicPartsOptions = parts;
+          _isLoadingParts = false;
+        });
+      }
+    } catch (e) {
+      print('> Error loading dynamic dropdowns for Resolution: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingIssues = false;
+          _isLoadingParts = false;
+        });
       }
     }
   }
@@ -351,25 +376,38 @@ class _ResolutionPageState extends State<ResolutionPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text('Select Issues (Multiple Selection)'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: ListView(
-              children: _issueOptions.map((issue) => CheckboxListTile(
-                title: Text(issue),
-                value: tempSelectedIssues.contains(issue),
-                onChanged: (value) {
-                  setDialogState(() {
-                    if (value == true) {
-                      tempSelectedIssues.add(issue);
-                    } else {
-                      tempSelectedIssues.remove(issue);
-                    }
-                  });
-                },
-              )).toList(),
-            ),
-          ),
+          content: _isLoadingIssues
+              ? SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : SizedBox(
+                  width: double.maxFinite,
+                  height: 400,
+                  child: ListView(
+                    children: (_dynamicIssueOptions.isNotEmpty
+                            ? _dynamicIssueOptions
+                            : [
+                                'Adapet', 'OLR', 'Contactor', 'LP/HP switch', 'sensor', 'LED', 'switch', 'controllers',
+                                'capacitor', 'fan', 'air filter', 'gas leakage', 'compressor', 'Icing', 'pump', 'filters',
+                                'plumbing', 'rusting', 'cracks', 'bucking', 'bending', 'environmental', 'none', 'Others'
+                              ])
+                        .map((issue) => CheckboxListTile(
+                              title: Text(issue),
+                              value: tempSelectedIssues.contains(issue),
+                              onChanged: (value) {
+                                setDialogState(() {
+                                  if (value == true) {
+                                    tempSelectedIssues.add(issue);
+                                  } else {
+                                    tempSelectedIssues.remove(issue);
+                                  }
+                                });
+                              },
+                            ))
+                        .toList(),
+                  ),
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -399,61 +437,86 @@ class _ResolutionPageState extends State<ResolutionPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: Text('Select Parts (Multiple Selection)'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 500,
-            child: ListView(
-              children: _partsOptions.entries.map((entry) {
-                final mainItem = entry.key;
-                final subItems = entry.value;
-                
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CheckboxListTile(
-                      title: Text(
-                        mainItem, 
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[800],
-                        ),
-                      ),
-                      value: tempSelectedParts.contains(mainItem),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          if (value == true) {
-                            tempSelectedParts.add(mainItem);
-                          } else {
-                            tempSelectedParts.remove(mainItem);
-                          }
-                        });
-                      },
-                    ),
-                    ...subItems.map((subItem) => Padding(
-                      padding: EdgeInsets.only(left: 32),
-                      child: CheckboxListTile(
-                        title: Text(
-                          subItem,
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        value: tempSelectedParts.contains(subItem),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            if (value == true) {
-                              tempSelectedParts.add(subItem);
-                            } else {
-                              tempSelectedParts.remove(subItem);
-                            }
-                          });
-                        },
-                      ),
-                    )),
-                    if (subItems.isNotEmpty) Divider(),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
+          content: _isLoadingParts
+              ? SizedBox(
+                  height: 100,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : SizedBox(
+                  width: double.maxFinite,
+                  height: 500,
+                  child: ListView(
+                    children: (_dynamicPartsOptions.isNotEmpty
+                            ? _dynamicPartsOptions.entries
+                            : {
+                                'ROCKER SWITCH': ['RED DPST', 'BLUE DPST', 'PUSH LOCK BUTTON'],
+                                'ADAPTER': ['1.5A ADAPTER', '2.5A ADAPTER', 'UVI CHOKE 230VAC'],
+                                'RELAY AND BASE': [],
+                                'WATER PUMP': [],
+                                'CAPACITOR': [],
+                                'OLR': [],
+                                'CONTACTOR': [],
+                                'TIMER': [],
+                                'FILTERS': ['SEDIMENT', 'PRE CARBON', 'POST CARBON', 'MINERALS', 'UF MEMBRANE', 'UV', 'OZONE-GENERATOR'],
+                                'FAN': [],
+                                'REFRIGERANT': [],
+                                'WHEELS': [],
+                                'MCB': [],
+                                'PLUG-IN 3 TOP': [],
+                                'PRESSURE SWITCH': [],
+                                'CONTROLLERS': ['SZ 2911', 'SZ 7510T', 'SZ 7524T'],
+                                'Others': [],
+                              }.entries)
+                        .map((entry) {
+                      final mainItem = entry.key;
+                      final subItems = entry.value;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CheckboxListTile(
+                            title: Text(
+                              mainItem,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[800],
+                              ),
+                            ),
+                            value: tempSelectedParts.contains(mainItem),
+                            onChanged: (value) {
+                              setDialogState(() {
+                                if (value == true) {
+                                  tempSelectedParts.add(mainItem);
+                                } else {
+                                  tempSelectedParts.remove(mainItem);
+                                }
+                              });
+                            },
+                          ),
+                          ...subItems.map((subItem) => Padding(
+                                padding: EdgeInsets.only(left: 32),
+                                child: CheckboxListTile(
+                                  title: Text(
+                                    subItem,
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                  value: tempSelectedParts.contains(subItem),
+                                  onChanged: (value) {
+                                    setDialogState(() {
+                                      if (value == true) {
+                                        tempSelectedParts.add(subItem);
+                                      } else {
+                                        tempSelectedParts.remove(subItem);
+                                      }
+                                    });
+                                  },
+                                ),
+                              )),
+                          if (subItems.isNotEmpty) Divider(),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

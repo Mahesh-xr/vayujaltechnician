@@ -188,7 +188,7 @@ class _ServiceAcknowledgmentScreenState extends State<ServiceAcknowledgmentScree
           .get();
       
       final technicianName = technicianDoc.exists 
-          ? (technicianDoc.data()?['name'] ?? technicianDoc.data()?['fullName'] ?? 'Unknown Technician')
+          ? (technicianDoc.data()?['fullName'] ?? technicianDoc.data()?['name'] ?? 'Unknown Technician')
           : 'Unknown Technician';
 
       // Get customer details
@@ -203,20 +203,7 @@ class _ServiceAcknowledgmentScreenState extends State<ServiceAcknowledgmentScree
       final partsReplaced = _serviceHistoryData!['partsReplaced'] ?? 'N/A';
 
       // Create comprehensive notification data
-      final notificationData = {
-        'srId': widget.srNumber,
-        'technicianId': user.uid,
-        'technicianName': technicianName,
-        'customerName': customerName,
-        'customerPhone': customerPhone,
-        'customerCompany': customerCompany,
-        'serviceDate': serviceDate,
-        'nextServiceDate': nextServiceDate,
-        'solutionProvided': solutionProvided,
-        'partsReplaced': partsReplaced,
-        'acknowledgmentTimestamp': FieldValue.serverTimestamp(),
-        'status': 'acknowledgment_completed',
-      };
+     
 
       // Create detailed notification message
       final notificationMessage = '''
@@ -232,6 +219,9 @@ Service Date: $serviceDate
       await FirebaseFirestore.instance.collection('notifications').add({
         'type': 'service_acknowledgment_completed',
         'title': 'Service Acknowledgment Completed',
+        'data': {
+          'srId': widget.srNumber,
+          },
         'message': notificationMessage,
         'recipientRole': 'admin',
         'senderId': user.uid,

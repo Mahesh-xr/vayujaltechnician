@@ -474,6 +474,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   final isActioned = notification['isActioned'] ?? false;
   
   return Padding(
+    
     padding: const EdgeInsets.only(top: 16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

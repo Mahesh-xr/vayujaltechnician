@@ -119,51 +119,51 @@ class _AllServiceRequestsPageState extends State<AllServiceRequestsPage> {
   }
 
  
-  void _filterServiceRequests(String filter) async {
-    if (_currentEmployeeId == null) return;
+  // void _filterServiceRequests(String filter) async {
+  //   if (_currentEmployeeId == null) return;
 
-    setState(() {
-      _selectedFilter = filter;
-      _isLoading = true;
-    });
+  //   setState(() {
+  //     _selectedFilter = filter;
+  //     _isLoading = true;
+  //   });
 
-    try {
-      List<Map<String, dynamic>> serviceRequests;
+  //   try {
+  //     List<Map<String, dynamic>> serviceRequests;
       
-      if (filter == 'All') {
-        serviceRequests = await AdminAction.getEmployeeServiceRequests(_currentEmployeeId!);
-      } else {
-        String statusFilter = _getStatusFromFilter(filter);
-        print('Filtering by status: $statusFilter'); // Debug print
-        serviceRequests = await AdminAction.getEmployeeServiceRequestsByStatus(_currentEmployeeId!, statusFilter);
-        print('Found ${serviceRequests.length} requests with status: $statusFilter'); // Debug print
-      }
+  //     if (filter == 'All') {
+  //       serviceRequests = await AdminAction.getEmployeeServiceRequests(_currentEmployeeId!);
+  //     } else {
+  //       String statusFilter = _getStatusFromFilter(filter);
+  //       print('Filtering by status: $statusFilter'); // Debug print
+  //       serviceRequests = await AdminAction.getEmployeeServiceRequestsByStatus(_currentEmployeeId!, statusFilter);
+  //       print('Found ${serviceRequests.length} requests with status: $statusFilter'); // Debug print
+  //     }
       
-      setState(() {
-        _allServiceRequests = serviceRequests;
-        _filteredServiceRequests = serviceRequests;
-        _isLoading = false;
-      });
+  //     setState(() {
+  //       _allServiceRequests = serviceRequests;
+  //       _filteredServiceRequests = serviceRequests;
+  //       _isLoading = false;
+  //     });
       
-      // Apply search filter if there's a search query
-      if (_searchController.text.isNotEmpty) {
-        _searchServiceRequests(_searchController.text);
-      }
-    } catch (e) {
-      print('Error in _filterServiceRequests: $e'); // Debug print
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error filtering service requests: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+  //     // Apply search filter if there's a search query
+  //     if (_searchController.text.isNotEmpty) {
+  //       _searchServiceRequests(_searchController.text);
+  //     }
+  //   } catch (e) {
+  //     print('Error in _filterServiceRequests: $e'); // Debug print
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Error filtering service requests: $e'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   }
+  // }
 
   // Updated status mapping to match database values
   String _getStatusFromFilter(String filter) {

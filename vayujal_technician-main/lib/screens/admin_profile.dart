@@ -9,6 +9,7 @@ import 'package:vayujal_technician/navigation/NormalAppBar.dart';
 import 'package:vayujal_technician/services/notification_actions_service.dart';
 import 'package:vayujal_technician/utils/validation_utils.dart';
 import 'package:vayujal_technician/functions/firebase_profile_action.dart';
+import 'package:vayujal_technician/services/dynamic_dropdown_service.dart';
 
 class AdminProfileSetupPage extends StatefulWidget {
   const AdminProfileSetupPage({super.key});
@@ -31,22 +32,8 @@ class _AdminProfileSetupPageState extends State<AdminProfileSetupPage> {
   String _profileImageUrl = '';
   String _selectedDesignation = 'Technician';
   File? _selectedImage;
-  
-  // Designation options
-  final List<String> _designations = [
-    'Technician',
-    'Senior Technician',
-    'Lead Technician',
-    'Supervisor',
-    'Manager',
-    'Engineer',
-    'Senior Engineer',
-    'Field Engineer',
-    'Technical Lead',
-    'Team Leader',
-    'Project Manager',
-    'Operations Manager',
-  ];
+  List<String> _designations = [];
+  bool _isLoadingDesignations = true;
   
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -99,6 +86,46 @@ class _AdminProfileSetupPageState extends State<AdminProfileSetupPage> {
       setState(() {
         _isLoadingProfile = false;
       });
+    }
+    
+    // Load dynamic designations
+    _loadDynamicDesignations();
+  }
+
+  Future<void> _loadDynamicDesignations() async {
+    try {
+      setState(() {
+        _isLoadingDesignations = true;
+      });
+      
+      // Fetch designations using the numbered fields structure
+      final designations = await DynamicDropdownService.fetchNumberedFieldsDropdown(
+        collection: 'dropdown_List',
+        document: 'Designation',
+      );
+      
+      print('> Fetched designations: ${designations.length} items');
+      if (designations.isNotEmpty) {
+        print('> Designations: ${designations.toList()}');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _designations = designations;
+          _isLoadingDesignations = false;
+          // Set default designation if available and not already set
+          if (designations.isNotEmpty && !designations.contains(_selectedDesignation)) {
+            _selectedDesignation = designations.first;
+          }
+        });
+      }
+    } catch (e) {
+      print('> Error loading designations: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingDesignations = false;
+        });
+      }
     }
   }
 
@@ -257,7 +284,7 @@ class _AdminProfileSetupPageState extends State<AdminProfileSetupPage> {
       final user = _auth.currentUser;
       if (user != null) {
         await _firestore.collection('technicians').doc(user.uid).set({
-          'name': _nameController.text.trim(),
+          'fullName': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'mobileNumber': _phoneController.text.trim(),
           'employeeId': _organizationController.text.trim(),
@@ -842,6 +869,37 @@ class _AdminProfileSetupPageState extends State<AdminProfileSetupPage> {
 
   Widget _buildDesignationField() {
     if (_isEditingMode) {
+      // Show loading state or dropdown in edit mode
+      if (_isLoadingDesignations) {
+        return Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.work, color: Colors.grey.shade500),
+              SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 12),
+                    Text('Loading designations...'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      
       // Show Dropdown in edit mode
       return DropdownButtonFormField<String>(
         value: _selectedDesignation,

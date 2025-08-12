@@ -7,6 +7,8 @@ import 'package:vayujal_technician/screens/login_screen.dart';
 import 'package:vayujal_technician/screens/notification_screen.dart';
 import 'package:vayujal_technician/services/auth.dart';
 import 'package:vayujal_technician/utils/constants.dart';
+import 'package:vayujal_technician/screens/splash_screen.dart';
+import 'package:vayujal_technician/utils/dropdown_uploader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,10 @@ void main() async {
     );
   }
 
+  // ONE-TIME UPLOAD: Uncomment the line below to upload initial dropdowns
+  // Then comment it out again after running once
+  // await DropdownUploader.uploadInitialDropdowns();
+  
   runApp(const MyApp());
 }
 
